@@ -1,0 +1,42 @@
+version: '3'
+services:
+  db:
+    image: postgres:10.1-alpine
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - '5432'
+    networks:
+      - app-network
+  web:
+    build: ./django
+    command: python3 manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./uit:/code
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
+    networks:
+      - app-network
+  webserver:
+    image: nginx:alpine
+    container_name: webserver
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    volumes:
+      - ./dist:/var/www
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+    depends_on:
+      - web
+    networks:
+      - app-network
+volumes:
+  postgres_data:
+networks:
+  app-network:
+    driver: bridge
